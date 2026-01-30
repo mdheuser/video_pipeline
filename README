@@ -1,0 +1,18 @@
+WORKFLOW
+
+(1) 1 - Extract frames fro videos
+(2) 1b - removed frames with too distant color
+(3) - Crop and resize frames
+(4) - Detect and remove pictures whose colour is too different
+(5) - Detect and remove images with text
+
+(6) 4c - Convert to video in order fopr human detection - 30 fps
+
+(7)
+--- BREAK
+--- Human work
+--- - Check video for text, logos and generally unwanted images
+--- - Manually delete frames
+
+(8) - randomise order
+(9) - Convert frames to video - 60 fps

@@ -1,4 +1,4 @@
-FRAMES_FOLDER=/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp/
+FRAMES_FOLDER=/Users/mdh/Documents/xxxx-2025/resized-frames-2mp/
 
 echo "Randomizing file order and renaming sequentially..."
 cd "$FRAMES_FOLDER"

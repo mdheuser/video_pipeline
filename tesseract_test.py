@@ -10,6 +10,6 @@ print(pytesseract.get_languages())
 
 # Test if Tesseract works on an image
 try:
-    print(pytesseract.image_to_string("/Users/mdh/Documents/two-minute-porn-2025/test_images_small/000000002.jpg", lang="eng"))
+    print(pytesseract.image_to_string("/Users/mdh/Documents/xxxx-2025/test_images_small/000000002.jpg", lang="eng"))
 except Exception as e:
     print("Error:", e)

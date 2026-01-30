@@ -54,9 +54,9 @@ def process_images(image_dir, destination_dir):
 			print(f"No text found in {image_file}") # Optional: Print for images without text
 
 # Example usage:
-image_directory = "/Users/mdh/Documents/two-minute-porn-2025/images_with_text"
-destination_directory = "/Users/mdh/Documents/two-minute-porn-2025/two_passes/second_pass"
-#image_directory = "/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp"
-#destination_directory = "/Users/mdh/Documents/two-minute-porn-2025/images_with_text_second_pass"
+image_directory = "/Users/mdh/Documents/xxxx-2025/images_with_text"
+destination_directory = "/Users/mdh/Documents/xxxx-2025/two_passes/second_pass"
+#image_directory = "/Users/mdh/Documents/xxxx-2025/resized-frames-2mp"
+#destination_directory = "/Users/mdh/Documents/xxxx-2025/images_with_text_second_pass"
 
 process_images(image_directory, destination_directory)

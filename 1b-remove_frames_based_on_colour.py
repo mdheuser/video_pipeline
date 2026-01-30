@@ -4,8 +4,8 @@ from PIL import Image
 import shutil
 
 # Set folder paths
-image_folder = "/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp"
-removed_folder = "/Users/mdh/Documents/two-minute-porn-2025/removed_folder_colour"  # Folder for images that are too different
+image_folder = "/Users/mdh/Documents/xxxx-2025/resized-frames-2mp"
+removed_folder = "/Users/mdh/Documents/xxxx-2025/removed_folder_colour"  # Folder for images that are too different
 
 # Ensure the removed folder exists
 os.makedirs(removed_folder, exist_ok=True)

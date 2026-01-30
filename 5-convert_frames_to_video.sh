@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RESIZED_FOLDER="$HOME/Documents/two-minute-porn-2025/resized-frames-2mp"
-FINAL_VIDEO="$HOME/Documents/two-minute-porn-2025/video_feb_14_crf-18_60-fps.mp4"
+RESIZED_FOLDER="$HOME/Documents/xxxx-2025/resized-frames-2mp"
+FINAL_VIDEO="$HOME/Documents/xxxx-2025/video_feb_14_crf-18_60-fps.mp4"
 
 # Convert images into video
 # The script is looking for jpgs without a path, so it needs to enter the folder.

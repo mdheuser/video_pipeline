@@ -2,7 +2,7 @@
 
 cd /Volumes/MOTHERSHIP/NEW-two-min-porn-2025
 for video in *.avi *.mp4 *.mkv; do
-    output_folder="/Users/mdh/Documents/two-minute-porn-2025/frames-2mp"
+    output_folder="/Users/mdh/Documents/xxxx-2025/frames-2mp"
     mkdir -p "$output_folder"
     ffmpeg -i "$video" -vf "fps=1/2" "$output_folder/${video%.*}_frame_%09d.jpg"
 done

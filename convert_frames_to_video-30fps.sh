@@ -1,5 +1,5 @@
-RESIZED_FOLDER=/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp
-FINAL_VIDEO=/Users/mdh/Documents/two-minute-porn-2025/final_video.mp4
+RESIZED_FOLDER=/Users/mdh/Documents/xxxx-2025/resized-frames-2mp
+FINAL_VIDEO=/Users/mdh/Documents/xxxx-2025/final_video.mp4
 
 # Convert images into video
 cd "$RESIZED_FOLDER"

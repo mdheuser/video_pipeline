@@ -8,10 +8,10 @@ import re
 from multiprocessing import Pool
 
 # Set folders
-INPUT_FOLDER = "/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp"
-OUTPUT_FOLDER = "/Users/mdh/Documents/two-minute-porn-2025/images_with_text_second_pass"
-#INPUT_FOLDER = "/Users/mdh/Documents/two-minute-porn-2025/test-images"
-#OUTPUT_FOLDER = "/Users/mdh/Documents/two-minute-porn-2025/test-images-excluded"
+INPUT_FOLDER = "/Users/mdh/Documents/xxxx-2025/resized-frames-2mp"
+OUTPUT_FOLDER = "/Users/mdh/Documents/xxxx-2025/images_with_text_second_pass"
+#INPUT_FOLDER = "/Users/mdh/Documents/xxxx-2025/test-images"
+#OUTPUT_FOLDER = "/Users/mdh/Documents/xxxx-2025/test-images-excluded"
 
 # Ensure output folder exists
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -93,8 +93,8 @@ nltk.data.path.append("/Users/mdh/nltk_data")
 english_words = set(word.lower() for word in words.words())
 
 # Set your folder paths
-INPUT_FOLDER = "/Users/mdh/Documents/two-minute-porn-2025/test-images"
-OUTPUT_FOLDER = "/Users/mdh/Documents/two-minute-porn-2025/test-images-excluded"
+INPUT_FOLDER = "/Users/mdh/Documents/xxxx-2025/test-images"
+OUTPUT_FOLDER = "/Users/mdh/Documents/xxxx-2025/test-images-excluded"
 
 # Create the output folder if it doesn't exist
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)

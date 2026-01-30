@@ -1,8 +1,8 @@
 : '
 #!/bin/bash
 
-reference="/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp/000039943.jpg"
-folder="/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp"
+reference="/Users/mdh/Documents/xxxx-2025/resized-frames-2mp/000039943.jpg"
+folder="/Users/mdh/Documents/xxxx-2025/resized-frames-2mp"
 
 counter=0
 
@@ -22,8 +22,8 @@ echo -e "\nDone! Processed $counter files."
 
 #!/bin/bash
 
-reference="/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp/000039943.jpg"
-folder="/Users/mdh/Documents/two-minute-porn-2025/resized-frames-2mp"
+reference="/Users/mdh/Documents/xxxx-2025/resized-frames-2mp/000039943.jpg"
+folder="/Users/mdh/Documents/xxxx-2025/resized-frames-2mp"
 
 counter=0
 

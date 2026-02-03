@@ -1,12 +1,12 @@
 WORKFLOW
 
-(1) 1 - Extract frames fro videos
-(2) 1b - removed frames with too distant color
+(1) 1 - Extract frames from videos
+(2) 1b - remove frames with too distant color
 (3) - Crop and resize frames
 (4) - Detect and remove pictures whose colour is too different
 (5) - Detect and remove images with text
 
-(6) 4c - Convert to video in order fopr human detection - 30 fps
+(6) 4c - Convert to video in order for human detection - 30 fps
 
 (7)
 --- BREAK
@@ -16,3 +16,11 @@ WORKFLOW
 
 (8) - randomise order
 (9) - Convert frames to video - 60 fps
+
+In my real-world scenarionm, this project was created for a specific purpose so it
+became messy. After automatically detecting frames with words and deleting them,
+I also spent long hours scouring the selected frames for any that might have slipped 
+detection.
+
+The version I am presenting here is simplified. It generates
+a video at the end without human interference.

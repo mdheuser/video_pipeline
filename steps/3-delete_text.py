@@ -69,12 +69,19 @@ def process_image(args_tuple):
         misspelled_words = spell.unknown(filtered_words)
 
         # If <= 1 misspelled word, treat as "real text" and move image out
-        if len(misspelled_words) <= 1:
+        # If we found no candidate words, there's no evidence of text => keep the image.
+        if not filtered_words:
+            return
+
+        misspelled_words = spell.unknown(filtered_words)
+
+        # Example rule: at least 2 words, and most are not misspelled.
+        if len(filtered_words) >= 2 and len(misspelled_words) <= 1:
             dest_path = os.path.join(excluded_dir, filename)
             shutil.move(image_path, dest_path)
-            print(f"--MOVED {filename}: All words spelled correctly -> {filtered_words}")
+            print(f"--MOVED {filename}: likely text -> {filtered_words}")
         else:
-            print(f"Misspelled words in {filename}: {misspelled_words}")
+            print(f"KEEP {filename}: words={filtered_words} misspelled={list(misspelled_words)}")
 
     except Exception as e:
         print(f"Error processing {filename}: {e}")

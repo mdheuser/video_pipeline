@@ -1,6 +1,7 @@
 work/
 output/
+input/
 .venv/
-__pycache__/
+pycache/
 *.pyc
 .DS_Store

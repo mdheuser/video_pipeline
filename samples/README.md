@@ -1,0 +1,1 @@
+All videos are free to use

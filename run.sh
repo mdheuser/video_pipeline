@@ -1,23 +1,14 @@
 #!/usr/bin/env bash
 
-# safer bash defaults. Exits on error/undefined var, catches pipeline errors.
 set -euo pipefail
-
-# make globs that match nothing expand to nothing (prevents "*.mp4" being treated as a literal filename).
+# Prevent "*.mp4" becoming a literal string if no matches.
 shopt -s nullglob
 
-# base directory is now the script location (repo root), NOT pwd.
-# This means the script works even if someone runs it from another directory.
+# --- Resolve repo root (script location), not the caller's cwd ---
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
-# --------------------------------------------------------------------
-# input directory handling
-# - User can pass input dir as:
-#     ./run.sh --input /path/to/videos
-#     ./run.sh /path/to/videos
-# - If omitted, defaults to ./input (repo-local).
-# --------------------------------------------------------------------
+# --- Args: input directory + optional smoke mode ---
 INPUT_DIR=""
 SMOKE=0
 
@@ -25,7 +16,7 @@ usage() {
   echo "Usage:"
   echo "  ./run.sh --input /path/to/videos [--smoke]"
   echo "  ./run.sh /path/to/videos [--smoke]"
-  echo "If omitted, defaults to: $ROOT_DIR/input"
+  echo "If omitted, defaults to: $ROOT_DIR/samples/videos"
   exit 1
 }
 
@@ -43,7 +34,7 @@ while [[ $# -gt 0 ]]; do
       usage
       ;;
     *)
-      # first non-flag argument is treated as INPUT_DIR
+      # First non-flag argument is treated as input directory.
       if [[ -z "$INPUT_DIR" ]]; then
         INPUT_DIR="$1"
         shift
@@ -55,8 +46,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Default input dir if none provided (useful for demo samples later).
 if [[ -z "$INPUT_DIR" ]]; then
-  INPUT_DIR="$ROOT_DIR/input"
+  INPUT_DIR="$ROOT_DIR/samples/videos"
 fi
 
 if [[ ! -d "$INPUT_DIR" ]]; then
@@ -64,131 +56,95 @@ if [[ ! -d "$INPUT_DIR" ]]; then
   usage
 fi
 
-# resolve INPUT_DIR to an absolute path (prevents path confusion later).
+# Normalize to absolute path (prevents confusion if caller uses relative paths).
 INPUT_DIR="$(cd "$INPUT_DIR" && pwd)"
 
-# --------------------------------------------------------------------
-# standard work/output locations inside the repo (relative paths)
-# This makes the project tidy and predictable.
-# --------------------------------------------------------------------
+# --- Standard project folders ---
 WORK_DIR="$ROOT_DIR/work"
-OUT_DIR="$ROOT_DIR/output"
+OUTPUT_DIR="$ROOT_DIR/output"
 
-FRAMES_FOLDER="$WORK_DIR/extracted_frames"
-RESIZED_FOLDER="$WORK_DIR/resized_frames"
+# Pipeline folders (all under work/ to keep repo tidy)
+EXTRACTED_FRAMES_DIR="$WORK_DIR/extracted_frames"
+RESIZED_FRAMES_DIR="$WORK_DIR/resized_frames"
+EXCLUDED_FRAMES_DIR="$WORK_DIR/excluded_frames"
 
-# Excluded images are kept just to check if Tesseract is working correctly.
-# False positives are expected and much better than false negatives.
-# (Text will be detected in frames without any text)
-EXCLUDED_FOLDER="$WORK_DIR/excluded_frames" 
+FINAL_VIDEO="$OUTPUT_DIR/final_video.mp4"
 
-FINAL_VIDEO="$OUT_DIR/final_video.mp4"
+mkdir -p "$EXTRACTED_FRAMES_DIR" "$RESIZED_FRAMES_DIR" "$EXCLUDED_FRAMES_DIR" "$OUTPUT_DIR"
 
-# python script path is repo-relative
-PYTHON_SCRIPT="$ROOT_DIR/steps/3-delete_text.py"
+# --- Optional: quick dependency check (recommended to add soon) ---
+# If you already created doctor.sh, uncomment:
+# bash "$ROOT_DIR/doctor.sh"
 
-# Create necessary folders
-mkdir -p "$FRAMES_FOLDER" "$RESIZED_FOLDER" "$EXCLUDED_FOLDER" "$OUT_DIR"
+echo "=== Video pipeline ==="
+echo "Input directory: $INPUT_DIR"
+echo "Work directory:  $WORK_DIR"
+echo "Output video:    $FINAL_VIDEO"
+echo "Smoke mode:      $SMOKE"
+echo
 
-# --------------------------------------------------------------------
-# Optional "smoke" mode for quick runs (recruiter-friendly).
-# When --smoke is enabled, we limit how much video each file contributes.
-# You can tune this later (seconds, fps, number of videos, etc.).
-# --------------------------------------------------------------------
-EXTRACT_LIMIT_ARGS=()
+# --- Step 1: Extract frames from videos in INPUT_DIR ---
+# Contract: INPUT_DIR, OUT_DIR, FPS_FILTER
+export INPUT_DIR="$INPUT_DIR"
+export OUT_DIR="$EXTRACTED_FRAMES_DIR"
+
+# In smoke mode, extract fewer frames by lowering sampling (or you can limit time later).
+# Your extract step expects FPS_FILTER like "1/2".
 if [[ "$SMOKE" -eq 1 ]]; then
-  EXTRACT_LIMIT_ARGS=( -t 5 )   # only first 5 seconds per input video
+  export FPS_FILTER="1/2"      # one frame every 2 seconds (fast demo)
+else
+  export FPS_FILTER="1/2"      # keep as your chosen default for now
 fi
 
-# --------------------------------------------------------------------
-# 1 - Extract frames from videos
-# we now read videos from INPUT_DIR, not from the current directory.
-# robust check for "no video files found".
-# --------------------------------------------------------------------
-echo "Extracting frames from: $INPUT_DIR"
+bash "$ROOT_DIR/steps/1-extract_frames.sh"
 
-VIDEOS=( "$INPUT_DIR"/*.avi "$INPUT_DIR"/*.mp4 "$INPUT_DIR"/*.mkv )
-if [[ ${#VIDEOS[@]} -eq 0 ]]; then
-  echo "No videos found in $INPUT_DIR (expected .avi .mp4 .mkv)."
-  exit 1
+# --- Step 2: Resize/crop extracted frames ---
+# Contract: IN_DIR, OUT_DIR, SCALE_FILTER, CROP_FILTER
+export IN_DIR="$EXTRACTED_FRAMES_DIR"
+export OUT_DIR="$RESIZED_FRAMES_DIR"
+export SCALE_FILTER="1620:-1"
+export CROP_FILTER="1280:720:170:0"
+
+bash "$ROOT_DIR/steps/2-resize_images.sh" "$EXTRACTED_FRAMES_DIR" "$RESIZED_FRAMES_DIR" "$SCALE_FILTER" "$CROP_FILTER"
+
+# --- Step 3: OCR pass to exclude frames with text/logos ---
+# Contract: python script uses --input and --excluded
+python3 "$ROOT_DIR/steps/3-delete_text.py" \
+  --input "$RESIZED_FRAMES_DIR" \
+  --excluded "$EXCLUDED_FRAMES_DIR"
+
+# --- Step 4: Randomize + rename sequentially for encoding ---
+# IMPORTANT: This operates on the folder that will be encoded.
+# After step 3, "kept" frames are those still remaining in RESIZED_FRAMES_DIR.
+# Contract: FRAMES_DIR
+export FRAMES_DIR="$RESIZED_FRAMES_DIR"
+bash "$ROOT_DIR/steps/4-randomize_order.sh" "$RESIZED_FRAMES_DIR"
+
+# --- Step 5: Convert sequential frames to final video ---
+# Contract: FRAMES_DIR, OUT_VIDEO, FPS, CRF, PRESET
+export FRAMES_DIR="$RESIZED_FRAMES_DIR"
+export OUT_VIDEO="$FINAL_VIDEO"
+
+# Keep these configurable, but provide sane defaults:
+export FPS="60"
+export CRF="18"
+export PRESET="veryslow"
+
+# In smoke mode you can also raise CRF and lower FPS for speed:
+if [[ "$SMOKE" -eq 1 ]]; then
+  export FPS="30"
+  export CRF="28"
+  export PRESET="fast"
 fi
 
-# Note: backgrounding ffmpeg per video can spawn many processes if there are lots of files.
-# Keeping your approach, but be aware this can stress CPU/disk on big batches.
-for video in "${VIDEOS[@]}"; do
-  base="$(basename "${video%.*}")"
-  ffmpeg "${EXTRACT_LIMIT_ARGS[@]}" -i "$video" -vf fps=1 \
-    "$FRAMES_FOLDER/${base}_frame_%09d.jpg" &
-done
-wait
+bash "$ROOT_DIR/steps/5-convert_frames_to_video.sh" \
+  "$RESIZED_FRAMES_DIR" \
+  "$OUT_VIDEO" \
+  "$FPS" \
+  "$CRF" \
+  "$PRESET"
 
-# --------------------------------------------------------------------
-# 2 - Resize and crop frames to 16:9
-# output goes to RESIZED_FOLDER inside work/
-# --------------------------------------------------------------------
-echo "Resizing and cropping frames..."
-for img in "$FRAMES_FOLDER"/*.jpg; do
-  ffmpeg -i "$img" -vf "scale=1620:-1,crop=1280:720:170:0" \
-    "$RESIZED_FOLDER/$(basename "$img")"
-done
-
-# --------------------------------------------------------------------
-# 3 - Remove images with text or logos (python script)
-# IMPORTANT: You should update 3-delete_text.py to accept --input/--excluded
-# (or read env vars) so it doesn't use hardcoded /Users/... paths.
-#
-# If your script DOES support args, this is the correct call:
-# --------------------------------------------------------------------
-python3 "$PYTHON_SCRIPT" --input "$RESIZED_FOLDER" --excluded "$EXCLUDED_FOLDER"
-
-# If your script does NOT support args yet, temporarily comment the line above
-# and fix 3-delete_text.py first (or add argparse like we discussed).
-
-# --------------------------------------------------------------------
-# 4 - Randomize file order and rename sequentially
-# CRITICAL CHANGED FIX: This must operate on RESIZED_FOLDER because step 5 expects
-# sequential names ("%09d.jpg") in RESIZED_FOLDER.
-#
-# ALSO removed uuidgen dependency (not guaranteed on every system).
-# We shuffle using python (available because you're already requiring python3).
-# --------------------------------------------------------------------
-echo "Randomizing resized frame order and renaming sequentially..."
-cd "$RESIZED_FOLDER"
-
-TEMP_DIR="$(mktemp -d)"
-
-# get a shuffled list of jpg files using python
-mapfile -t SHUFFLED < <(python3 - <<'PY'
-import glob, random
-files = glob.glob("*.jpg")
-random.shuffle(files)
-for f in files:
-    print(f)
-PY
-)
-
-# Move shuffled files into temp with sequential names
-counter=1
-for f in "${SHUFFLED[@]}"; do
-  # Skip if list is empty (defensive)
-  [[ -z "$f" ]] && continue
-  mv "$f" "$TEMP_DIR/$(printf "%09d.jpg" "$counter")"
-  counter=$((counter + 1))
-done
-
-# Move them back
-mv "$TEMP_DIR"/*.jpg .
-rmdir "$TEMP_DIR"
-
-echo "Renaming complete. Files are now named sequentially from 000000001.jpg"
-
-# --------------------------------------------------------------------
-# 5 - Convert images into video
-# video is written into ./output, not hardcoded absolute path.
-# --------------------------------------------------------------------
-echo "Generating video..."
-ffmpeg -y -framerate 60 -start_number 1 -i "%09d.jpg" \
-  -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
-  "$FINAL_VIDEO"
-
-echo "✅ Process completed! Your video is saved as: $FINAL_VIDEO"
+echo
+echo "✅ Done!"
+echo "Final video: $FINAL_VIDEO"
+echo "Excluded frames: $EXCLUDED_FRAMES_DIR"

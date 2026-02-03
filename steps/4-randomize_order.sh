@@ -1,24 +1,49 @@
-FRAMES_FOLDER=/Users/mdh/Documents/xxxx-2025/resized-frames-2mp/
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s nullglob
+
+FRAMES_DIR="${1:-}"
+
+if [[ -z "$FRAMES_DIR" ]]; then
+  echo "Usage: $0 <frames_dir>"
+  exit 1
+fi
+
+if [[ ! -d "$FRAMES_DIR" ]]; then
+  echo "Frames directory not found: $FRAMES_DIR"
+  exit 1
+fi
 
 echo "Randomizing file order and renaming sequentially..."
-cd "$FRAMES_FOLDER"
+cd "$FRAMES_DIR"
 
-# Create a temporary directory for the operation
-TEMP_DIR=$(mktemp -d)
+# Ensure there are jpgs
+if ! ls *.jpg >/dev/null 2>&1; then
+  echo "No .jpg files found in: $FRAMES_DIR"
+  exit 1
+fi
 
-# Move all jpg files to the temporary directory with random names
-find . -maxdepth 1 -type f -name "*.jpg" | while read file; do
-    mv "$file" "$TEMP_DIR/$(uuidgen).jpg"
-done
+TEMP_DIR="$(mktemp -d)"
 
-# Move files back with sequential names
 counter=1
-find "$TEMP_DIR" -type f -name "*.jpg" | sort | while read file; do
-    mv "$file" "$(printf "%09d.jpg" $counter)"
-    ((counter++))
+
+# Python prints shuffled filenames, one per line.
+python3 - <<'PY' | while IFS= read -r f; do
+import glob, random
+files = glob.glob("*.jpg")
+random.shuffle(files)
+for x in files:
+    print(x)
+PY
+  # Skip empty lines defensively
+  [[ -z "${f:-}" ]] && continue
+
+  mv -- "$f" "$TEMP_DIR/$(printf "%09d.jpg" "$counter")"
+  counter=$((counter + 1))
 done
 
-# Remove the temporary directory
-rmdir "$TEMP_DIR"
+# Move sequential files back
+mv -- "$TEMP_DIR"/*.jpg .
+rmdir -- "$TEMP_DIR"
 
-echo "Renaming complete. Files are now named sequentially from 000000001.jpg"
+echo "✅ Renaming complete. Files are now named sequentially from 000000001.jpg"

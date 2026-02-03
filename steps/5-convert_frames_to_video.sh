@@ -1,21 +1,43 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s nullglob
 
-RESIZED_FOLDER="$HOME/Documents/xxxx-2025/resized-frames-2mp"
-FINAL_VIDEO="$HOME/Documents/xxxx-2025/video_feb_14_crf-18_60-fps.mp4"
+FRAMES_DIR="${1:-}"
+OUT_VIDEO="${2:-}"
+FPS="${3:-60}"
+CRF="${4:-18}"
+PRESET="${5:-veryslow}"
 
-# Convert images into video
-# The script is looking for jpgs without a path, so it needs to enter the folder.
-cd "$RESIZED_FOLDER"
+if [[ -z "$FRAMES_DIR" || -z "$OUT_VIDEO" ]]; then
+  echo "Usage: $0 <frames_dir> <out_video> [fps] [crf] [preset]"
+  exit 1
+fi
+
+if [[ ! -d "$FRAMES_DIR" ]]; then
+  echo "Frames directory not found: $FRAMES_DIR"
+  exit 1
+fi
+
+mkdir -p "$(dirname "$OUT_VIDEO")"
+
+cd "$FRAMES_DIR"
+
+# Ensure there are jpgs
+if ! ls *.jpg >/dev/null 2>&1; then
+  echo "No .jpg files found in: $FRAMES_DIR"
+  exit 1
+fi
+
 echo "Generating video..."
-# -preset fast -- change to veryslow when exporting final version!
-# -trying to lower quality to crf 28. Go back to 25 or less if too low.
-# crg 28 is OK for now. 40 looks terrible.
+echo "  Frames:  $FRAMES_DIR"
+echo "  Output:  $OUT_VIDEO"
+echo "  FPS:     $FPS"
+echo "  CRF:     $CRF"
+echo "  Preset:  $PRESET"
 
-ffmpeg -y -framerate 60 -pattern_type glob -i "*.jpg" \
-    -c:v libx264 -preset veryslow -crf 18 -pix_fmt yuv420p \
-    -tune fastdecode -profile:v baseline -threads 4 \
-    -movflags +faststart "$FINAL_VIDEO"
+# Assumes step 4 renamed frames to 000000001.jpg, 000000002.jpg, ...
+ffmpeg -y -framerate "$FPS" -start_number 1 -i "%09d.jpg" \
+  -c:v libx264 -preset "$PRESET" -crf "$CRF" -pix_fmt yuv420p \
+  -movflags +faststart "$OUT_VIDEO"
 
-echo "✅ Process completed! Your video is saved as: $FINAL_VIDEO"
-
-cd ..
+echo "✅ Video written to: $OUT_VIDEO"

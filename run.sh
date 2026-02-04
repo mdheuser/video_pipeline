@@ -1,43 +1,38 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
-# Prevent "*.mp4" becoming a literal string if no matches.
-shopt -s nullglob
-
-# --- Resolve repo root (script location), not the caller's cwd ---
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT_DIR"
-
-# --- Args: input directory + optional smoke mode ---
-INPUT_DIR=""
-SMOKE=0
 
 usage() {
   echo "Usage:"
-  echo "  ./run.sh --input /path/to/videos [--smoke]"
-  echo "  ./run.sh /path/to/videos [--smoke]"
-  echo "If omitted, defaults to: $ROOT_DIR/samples/videos"
+  echo "  ./run.sh <input_dir> <output_dir> [--smoke] [--work-dir <dir>]"
+  echo "  ./run.sh --input <input_dir> --output <output_dir> [--smoke] [--work-dir <dir>]"
   exit 1
 }
 
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+INPUT_DIR=""
+OUTPUT_DIR=""
+WORK_DIR=""
+SMOKE=0
+
+# Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --input|-i)
-      INPUT_DIR="${2:-}"
-      shift 2
-      ;;
+      INPUT_DIR="${2:-}"; shift 2 ;;
+    --output|-o)
+      OUTPUT_DIR="${2:-}"; shift 2 ;;
+    --work-dir)
+      WORK_DIR="${2:-}"; shift 2 ;;
     --smoke)
-      SMOKE=1
-      shift
-      ;;
+      SMOKE=1; shift ;;
     -h|--help)
-      usage
-      ;;
+      usage ;;
     *)
-      # First non-flag argument is treated as input directory.
       if [[ -z "$INPUT_DIR" ]]; then
-        INPUT_DIR="$1"
-        shift
+        INPUT_DIR="$1"; shift
+      elif [[ -z "$OUTPUT_DIR" ]]; then
+        OUTPUT_DIR="$1"; shift
       else
         echo "Unknown argument: $1"
         usage
@@ -46,9 +41,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Default input dir if none provided (useful for demo samples later).
+# Defaults (useful for demos)
 if [[ -z "$INPUT_DIR" ]]; then
   INPUT_DIR="$ROOT_DIR/samples/videos"
+fi
+if [[ -z "$OUTPUT_DIR" ]]; then
+  OUTPUT_DIR="$ROOT_DIR/output"
+fi
+if [[ -z "$WORK_DIR" ]]; then
+  WORK_DIR="$ROOT_DIR/work"
 fi
 
 if [[ ! -d "$INPUT_DIR" ]]; then
@@ -56,25 +57,24 @@ if [[ ! -d "$INPUT_DIR" ]]; then
   usage
 fi
 
-# Normalize to absolute path (prevents confusion if caller uses relative paths).
+# Normalize
 INPUT_DIR="$(cd "$INPUT_DIR" && pwd)"
+mkdir -p "$OUTPUT_DIR" "$WORK_DIR"
+
+# If OUTPUT_DIR is relative, anchor it at repo root for consistency
+if [[ "$OUTPUT_DIR" != /* ]]; then
+  OUTPUT_DIR="$ROOT_DIR/$OUTPUT_DIR"
+fi
+mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 
 # --- Standard project folders ---
-WORK_DIR="$ROOT_DIR/work"
-OUTPUT_DIR="$ROOT_DIR/output"
-
-# Pipeline folders (all under work/ to keep repo tidy)
 EXTRACTED_FRAMES_DIR="$WORK_DIR/extracted_frames"
 RESIZED_FRAMES_DIR="$WORK_DIR/resized_frames"
 EXCLUDED_FRAMES_DIR="$WORK_DIR/excluded_frames"
-
 FINAL_VIDEO="$OUTPUT_DIR/final_video.mp4"
 
-mkdir -p "$EXTRACTED_FRAMES_DIR" "$RESIZED_FRAMES_DIR" "$EXCLUDED_FRAMES_DIR" "$OUTPUT_DIR"
-
-# --- Optional: quick dependency check (recommended to add soon) ---
-# If you already created doctor.sh, uncomment:
-# bash "$ROOT_DIR/doctor.sh"
+mkdir -p "$EXTRACTED_FRAMES_DIR" "$RESIZED_FRAMES_DIR" "$EXCLUDED_FRAMES_DIR"
 
 echo "=== Video pipeline ==="
 echo "Input directory: $INPUT_DIR"
@@ -83,66 +83,60 @@ echo "Output video:    $FINAL_VIDEO"
 echo "Smoke mode:      $SMOKE"
 echo
 
-# --- Step 1: Extract frames from videos in INPUT_DIR ---
-# Contract: INPUT_DIR, OUT_DIR, FPS_FILTER
+# --- Step 1: Extract frames ---
 export INPUT_DIR="$INPUT_DIR"
 export OUT_DIR="$EXTRACTED_FRAMES_DIR"
 
-# In smoke mode, extract fewer frames by lowering sampling (or you can limit time later).
-# Your extract step expects FPS_FILTER like "1/2".
 if [[ "$SMOKE" -eq 1 ]]; then
-  export FPS_FILTER="1/2"      # one frame every 2 seconds (fast demo)
+  export FPS_FILTER="1/2"
 else
-  export FPS_FILTER="10"      # keep as your chosen default for now
+  export FPS_FILTER="10"
 fi
 
 bash "$ROOT_DIR/steps/1-extract_frames.sh"
 
-# --- Step 2: Resize/crop extracted frames ---
-# Contract: IN_DIR, OUT_DIR, SCALE_FILTER, CROP_FILTER
+# --- Step 2: Resize/crop ---
 export IN_DIR="$EXTRACTED_FRAMES_DIR"
 export OUT_DIR="$RESIZED_FRAMES_DIR"
 export SCALE_FILTER="1620:-1"
 export CROP_FILTER="1280:720:170:0"
 
-bash "$ROOT_DIR/steps/2-resize_images.sh" "$EXTRACTED_FRAMES_DIR" "$RESIZED_FRAMES_DIR" "$SCALE_FILTER" "$CROP_FILTER"
+bash "$ROOT_DIR/steps/2-resize_images.sh" \
+  "$EXTRACTED_FRAMES_DIR" \
+  "$RESIZED_FRAMES_DIR" \
+  "$SCALE_FILTER" \
+  "$CROP_FILTER"
 
-# --- Step 3: OCR pass to exclude frames with text/logos ---
-# Pass 1 (PSM 11), confidence threshold 75, minimum letters 1
+# DELETE ALL EXTRACTED FRAMES
+# After resize/crop succeeds, raw extracted frames are no longer needed
+rm -rf "$EXTRACTED_FRAMES_DIR"
+
+# --- Step 3: OCR exclude ---
 python3 "$ROOT_DIR/steps/3-delete_text.py" \
-  --input "$WORK_DIR/resized_frames" \
-  --excluded "$WORK_DIR/excluded_frames" \
+  --input "$RESIZED_FRAMES_DIR" \
+  --excluded "$EXCLUDED_FRAMES_DIR" \
   --min-conf 75 \
   --min-letters 1 \
   --tess-config "--psm 11 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-# Pass 2 (PSM 3), confidence threshold 58, min letters 1
 python3 "$ROOT_DIR/steps/3-delete_text.py" \
-  --input "$WORK_DIR/resized_frames" \
-  --excluded "$WORK_DIR/excluded_frames" \
+  --input "$RESIZED_FRAMES_DIR" \
+  --excluded "$EXCLUDED_FRAMES_DIR" \
   --min-conf 58 \
   --min-letters 1 \
   --tess-config "--psm 3 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-
-# --- Step 4: Randomize + rename sequentially for encoding ---
-# IMPORTANT: This operates on the folder that will be encoded.
-# After step 3, "kept" frames are those still remaining in RESIZED_FRAMES_DIR.
-# Contract: FRAMES_DIR
-export FRAMES_DIR="$RESIZED_FRAMES_DIR"
+# --- Step 4: Randomize ---
 bash "$ROOT_DIR/steps/4-randomize_order.sh" "$RESIZED_FRAMES_DIR"
 
-# --- Step 5: Convert sequential frames to final video ---
-# Contract: FRAMES_DIR, OUT_VIDEO, FPS, CRF, PRESET
+# --- Step 5: Encode video ---
 export FRAMES_DIR="$RESIZED_FRAMES_DIR"
 export OUT_VIDEO="$FINAL_VIDEO"
 
-# Keep these configurable, but provide sane defaults:
 export FPS="60"
 export CRF="18"
 export PRESET="veryslow"
 
-# In smoke mode you can also raise CRF and lower FPS for speed:
 if [[ "$SMOKE" -eq 1 ]]; then
   export FPS="30"
   export CRF="28"

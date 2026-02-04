@@ -1,0 +1,10 @@
+services:
+  pipeline:
+    build: .
+    volumes:
+      - ./output:/data/output
+      - ./work:/app/work
+      # set INPUT_DIR on the command line by editing this line or using an env var
+      - /absolute/path/to/input:/data/input:ro
+    user: "${UID:-1000}:${GID:-1000}"
+    command: ["/data/input", "/data/output"]

@@ -1,6 +1,7 @@
 work/
 output/
 input/
+samples/videos/
 .venv/
 pycache/
 *.pyc

@@ -90,7 +90,7 @@ export OUT_DIR="$EXTRACTED_FRAMES_DIR"
 if [[ "$SMOKE" -eq 1 ]]; then
   export FPS_FILTER="1/2"
 else
-  export FPS_FILTER="10"
+  export FPS_FILTER="1/15"
 fi
 
 bash "$ROOT_DIR/steps/1-extract_frames.sh"

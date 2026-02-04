@@ -1,0 +1,6 @@
+└─ docs/
+   └─ media/
+      ├─ input_01.jpg
+      ├─ input_02.jpg
+      ├─ input_03.jpg
+      └─ output_preview.gif

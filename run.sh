@@ -93,7 +93,7 @@ export OUT_DIR="$EXTRACTED_FRAMES_DIR"
 if [[ "$SMOKE" -eq 1 ]]; then
   export FPS_FILTER="1/2"      # one frame every 2 seconds (fast demo)
 else
-  export FPS_FILTER="1/2"      # keep as your chosen default for now
+  export FPS_FILTER="10"      # keep as your chosen default for now
 fi
 
 bash "$ROOT_DIR/steps/1-extract_frames.sh"
@@ -108,10 +108,22 @@ export CROP_FILTER="1280:720:170:0"
 bash "$ROOT_DIR/steps/2-resize_images.sh" "$EXTRACTED_FRAMES_DIR" "$RESIZED_FRAMES_DIR" "$SCALE_FILTER" "$CROP_FILTER"
 
 # --- Step 3: OCR pass to exclude frames with text/logos ---
-# Contract: python script uses --input and --excluded
+# Pass 1 (PSM 11), confidence threshold 75, minimum letters 1
 python3 "$ROOT_DIR/steps/3-delete_text.py" \
-  --input "$RESIZED_FRAMES_DIR" \
-  --excluded "$EXCLUDED_FRAMES_DIR"
+  --input "$WORK_DIR/resized_frames" \
+  --excluded "$WORK_DIR/excluded_frames" \
+  --min-conf 75 \
+  --min-letters 1 \
+  --tess-config "--psm 11 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+# Pass 2 (PSM 3), confidence threshold 58, min letters 1
+python3 "$ROOT_DIR/steps/3-delete_text.py" \
+  --input "$WORK_DIR/resized_frames" \
+  --excluded "$WORK_DIR/excluded_frames" \
+  --min-conf 58 \
+  --min-letters 1 \
+  --tess-config "--psm 3 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
 
 # --- Step 4: Randomize + rename sequentially for encoding ---
 # IMPORTANT: This operates on the folder that will be encoded.

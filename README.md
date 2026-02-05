@@ -14,11 +14,7 @@ It was built to automate a messy real-world workflow. The version in this repo i
 
 ### Input (still frames from source videos)
 
-<img src="docs/media/input_01.jpg" alt="Input video example 1 – still frame" width="180">
-<img src="docs/media/input_02.jpg" alt="Input video example 2 – still frame" width="180">
-<img src="docs/media/input_03.jpg" alt="Input video example 3 – still frame" width="180">
-<img src="docs/media/input_04.jpg" alt="Input video example 3 – still frame" width="180">
-<img src="docs/media/input_05.jpg" alt="Input video example 3 – still frame" width="180">
+<img src="docs/media/input_01.jpg" alt="Input video example 1 – still frame" width="180"><img src="docs/media/input_02.jpg" alt="Input video example 2 – still frame" width="180"><img src="docs/media/input_03.jpg" alt="Input video example 3 – still frame" width="180"><img src="docs/media/input_04.jpg" alt="Input video example 3 – still frame" width="180"><img src="docs/media/input_05.jpg" alt="Input video example 3 – still frame" width="180">
 
 
 ### Output (≤ 5s animated preview)

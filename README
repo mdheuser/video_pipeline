@@ -25,6 +25,20 @@ It was built to automate a messy real-world workflow. The version in this repo i
 
 <img src="docs/media/output_preview.gif" alt="Output preview (GIF, ≤ 5s)" width="520">
 
+## Examples
+
+### Input (still frames from source videos)
+
+![](docs/media/input_01.jpg)
+![](docs/media/input_02.jpg)
+![](docs/media/input_03.jpg)
+![](docs/media/input_04.jpg)
+![](docs/media/input_05.jpg)
+
+### Output (≤ 5s animated preview)
+
+![](docs/media/output_preview.gif)
+
 ---
 
 ## Workflow

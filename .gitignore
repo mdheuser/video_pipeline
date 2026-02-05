@@ -1,7 +1,6 @@
 work/
 output/
 input/
-samples/videos/
 experiments/
 backup_videos_for_pipeline/
 generate_readme_media.sh

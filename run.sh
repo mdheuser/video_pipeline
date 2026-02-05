@@ -88,12 +88,23 @@ export INPUT_DIR="$INPUT_DIR"
 export OUT_DIR="$EXTRACTED_FRAMES_DIR"
 
 if [[ "$SMOKE" -eq 1 ]]; then
-  export FPS_FILTER="1/2"
+  # IMPORTANT: activate smoke branch inside the extractor script
+  export MODE="smoke"
+
+  # Global budget knobs (tweak if you want)
+  export SMOKE_TOTAL_FRAMES="${SMOKE_TOTAL_FRAMES:-100}"
+  export SMOKE_MAX_PER_VIDEO="${SMOKE_MAX_PER_VIDEO:-40}"
+  export SMOKE_TARGET_FRAMES="${SMOKE_TARGET_FRAMES:-40}"
+  export SMOKE_SECONDS="${SMOKE_SECONDS:-0}"
+
+  # Don't set FPS_FILTER here; smoke branch ignores it anyway and computes fps
 else
-  export FPS_FILTER="1/15"
+  unset MODE || true
+  export FPS_FILTER="${FPS_FILTER:-1/2}"  # normal default
 fi
 
 bash "$ROOT_DIR/steps/1-extract_frames.sh"
+
 
 # --- Step 2: Resize/crop ---
 export IN_DIR="$EXTRACTED_FRAMES_DIR"
@@ -137,8 +148,9 @@ export FPS="60"
 export CRF="18"
 export PRESET="veryslow"
 
+# lower quality for the smoke test
 if [[ "$SMOKE" -eq 1 ]]; then
-  export FPS="30"
+  export FPS="24"
   export CRF="28"
   export PRESET="fast"
 fi

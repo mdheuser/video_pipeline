@@ -34,6 +34,8 @@ It was built to automate a messy real-world workflow. The version in this repo i
 ![](docs/media/input_03.jpg)
 ![](docs/media/input_04.jpg)
 ![](docs/media/input_05.jpg)
+![](docs/media/input_06.jpg)
+
 
 ### Output (≤ 5s animated preview)
 
@@ -174,4 +176,4 @@ If Docker builds but the pipeline fails:
 ---
 
 ## License
-?????? TO DO
+MIT license 2025-2026
